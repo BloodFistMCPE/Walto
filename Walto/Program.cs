@@ -1,21 +1,11 @@
-﻿using System;
-using System.ComponentModel;
-using System.Globalization;
-using System.Linq.Expressions;
-using System.Text.RegularExpressions;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Net.Http.Json;
-using System.Xml.Linq;
-using Newtonsoft.Json;
-using Microsoft.VisualBasic;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.IO;
-using System.Reflection.Metadata;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Walto
 {
-    class Program
+    public class Program
     {
 
         private static readonly string logoText = "█░░░█ █▀▀█ █░░ ▀▀█▀▀ █▀▀█\n█▄█▄█ █▄▄█ █░░ ░░█░░ █░░█\n░▀░▀░ ▀░░▀ ▀▀▀ ░░▀░░ ▀▀▀▀";
