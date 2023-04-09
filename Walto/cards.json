@@ -1,0 +1,23 @@
+[
+  {
+    "Id": "ENIOPR",
+    "UserName": "Huseyin",
+    "UserId": 1234567,
+    "Permissions": [
+      "Student"
+    ],
+    "CreationStamp": "2044-03-10T00:00:00",
+    "ExpiryStamp": "2044-03-10T00:00:00"
+  },
+  {
+    "Id": "441V78",
+    "UserName": "James",
+    "UserId": 1234655,
+    "Permissions": [
+      "Student",
+      "Balcony"
+    ],
+    "CreationStamp": "2044-01-04T00:00:00",
+    "ExpiryStamp": "2044-01-04T00:00:00"
+  }
+]

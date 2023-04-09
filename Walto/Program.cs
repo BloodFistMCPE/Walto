@@ -1,64 +1,44 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace Walto
 {
     public class Program
     {
+        private static readonly string _cardPath = "cards.json";
+        private static List<Card>? allCards;
 
         private static readonly string logoText = "█░░░█ █▀▀█ █░░ ▀▀█▀▀ █▀▀█\n█▄█▄█ █▄▄█ █░░ ░░█░░ █░░█\n░▀░▀░ ▀░░▀ ▀▀▀ ░░▀░░ ▀▀▀▀";
         private static readonly string[] Doors = { "Balcony", "Office", "Student" };
-        private static Card[] allCards;
+
         private static int currentMenuId = 0;
 
-        private static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            string json = File.ReadAllText("cards.json");
-            var cardDictionary = JsonConvert.DeserializeObject<Dictionary<string, Card>>(json);
-            allCards = cardDictionary.Values.ToArray();
-            Thread ESCKeyThread = new Thread(EscKeyThread);
-            ESCKeyThread.Start();
-            mainMenu();
-        }
-
-        private static extern short GetAsyncKeyState(int vKey);
-
-        public static bool KeyPressed(int vk)
-        {
-            return (GetAsyncKeyState(vk) & 32768) != 0;
-        }
-
-        private static void EscKeyThread()
-        {
-            while (true)
+            if (!File.Exists(_cardPath))
             {
-                bool isEscapePressed = KeyPressed(0x71);
-
-                if (isEscapePressed)
+                using (StreamWriter sw = File.CreateText(_cardPath))
                 {
-                    switch (currentMenuId)
-                    {
-                        case 0:
-                            break;
-                        case 1:
-                            mainMenu();
-                            break;
-                        case 2:
-                            mainMenu();
-                            break;
-                        case 3:
-                            mainMenu();
-                            break;
-                    }
+                    sw.Write("[]");
                 }
             }
+
+            string json = File.ReadAllText(_cardPath);
+            allCards = JsonConvert.DeserializeObject<List<Card>>(json);
+
+            Thread ESCKeyThread = new(EscKeyThread);
+            ESCKeyThread.Start();
+
+            MainMenu();
         }
 
-        private static void mainMenu()
+        private static void MainMenu()
         {
             currentMenuId = 0;
+
             Console.Clear();
             Console.WriteLine(logoText);
             Console.WriteLine("Enter 1 To Create A Card");
@@ -76,29 +56,51 @@ namespace Walto
             switch (option)
             {
                 case 1:
-                    cardCreationMenu();
+                    CardCreationMenu();
                     break;
                 case 2:
-                    viewCard();
+                    ViewCard();
                     break;
                 case 3:
-                    viewAllCards();
+                    ViewAllCards();
                     break;
             }
+
             Console.ReadKey();
         }
 
-        private static void cardCreationMenu()
+        private static void EscKeyThread()
+        {
+            while (true)
+            {
+                if (KeyPressed(0x1B))
+                {
+                    if (currentMenuId != 0)
+                    {
+                        MainMenu();
+                    }   
+                    else
+                    {
+                        Environment.Exit(0);
+                    }
+                }
+            }
+        }
+
+        private static void CardCreationMenu()
         {
             currentMenuId = 1;
+
             Console.Clear();
             Console.WriteLine(logoText);
             Console.WriteLine("- Walto Card Creation -");
             Console.WriteLine("Press [ESC] to go Back");
             Console.Write("Enter the user's full name: ");
+
             // Input and Validate user name
             string userName;
-            Regex regex = new Regex("^[a-zA-Z ]+$");
+            Regex regex = new("^[a-zA-Z ]+$");
+
             while (true)
             {
                 Console.Write("Enter your name: ");
@@ -113,9 +115,11 @@ namespace Walto
                     Console.WriteLine("Invalid Name. Please enter a name with only letters and spaces.");
                 }
             }
+
             // Input and Validate user id
             Console.Write("Enter the user's ID (7 digits): ");
             int userId;
+
             while (true)
             {
                 string input = Console.ReadLine();
@@ -128,12 +132,15 @@ namespace Walto
                     Console.Write("Invalid ID Format. Please enter a 7 digit number: ");
                 }
             }
+
             // Give student area doors by default
             Console.WriteLine("Enter the user's permissions in a comma seperated list");
             Console.WriteLine("- `Student` permission is applied by default");
             Console.WriteLine("- Leave blank to skip this step");
             Console.WriteLine("` Valid Permissions: " + string.Join(", ", Doors));
+
             string[] perms = { "Student" };
+
             while (true)
             {
                 Console.Write("Enter permissions: ");
@@ -155,7 +162,7 @@ namespace Walto
                     if (!perms.Contains(trimmedItem))
                     {
                         Array.Resize(ref perms, perms.Length + 1);
-                        perms[perms.Length - 1] = trimmedItem;
+                        perms[^1] = trimmedItem;
                     }
                 }
 
@@ -170,14 +177,14 @@ namespace Walto
                 }
             }
             // Input and validate Valid From Date
-            DateTime validFromDate;
+            DateTime CreationStamp;
             while (true)
             {
                 Console.Write("Enter the user's valid from date (dd/mm/yyyy): ");
                 string input = Console.ReadLine();
-                if (DateTime.TryParseExact(input, "d/M/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out validFromDate))
+                if (DateTime.TryParseExact(input, "d/M/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out CreationStamp))
                 {
-                    if (validFromDate.Date >= DateTime.Today)
+                    if (CreationStamp.Date >= DateTime.Today)
                     {
                         break;
                     }
@@ -192,14 +199,14 @@ namespace Walto
                 }
             }
             // Input and validate Valid Till Date
-            DateTime validTillDate;
+            DateTime ExpiryStamp;
             while (true)
             {
                 Console.Write("Enter the user's valid till date (dd/mm/yyyy): ");
                 string input = Console.ReadLine();
-                if (DateTime.TryParseExact(input, "d/M/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out validTillDate))
+                if (DateTime.TryParseExact(input, "d/M/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out ExpiryStamp))
                 {
-                    if (validTillDate >= validFromDate)
+                    if (ExpiryStamp >= CreationStamp)
                     {
                         break;
                     }
@@ -217,8 +224,8 @@ namespace Walto
             Console.WriteLine("User Name: " + userName);
             Console.WriteLine("User ID: " + userId.ToString());
             Console.WriteLine("User Permissions: " + string.Join(", ", perms));
-            Console.WriteLine("User Valid From: " + validFromDate.ToString("d/M/yyyy"));
-            Console.WriteLine("User Valid Till: " + validTillDate.ToString("d/M/yyyy"));
+            Console.WriteLine("User Valid From: " + CreationStamp.ToString("d/M/yyyy"));
+            Console.WriteLine("User Valid Till: " + ExpiryStamp.ToString("d/M/yyyy"));
             Console.WriteLine("Press Enter to proceed otherwise press ESC");
             // Detect Enter or ESC key
             ConsoleKeyInfo keyInfo;
@@ -228,21 +235,21 @@ namespace Walto
 
                 if (keyInfo.Key == ConsoleKey.Enter)
                 {
-                    createCard(userName, userId, perms, validFromDate, validTillDate);
+                    createCard(userName, userId, perms, CreationStamp, ExpiryStamp);
                 }
                 else if (keyInfo.Key == ConsoleKey.Escape)
                 {
-                    mainMenu();
+                    MainMenu();
                 }
 
-            } while (keyInfo.Key != ConsoleKey.Enter && keyInfo.Key != ConsoleKey.Escape);
+            } while (keyInfo.Key is not ConsoleKey.Enter and not ConsoleKey.Escape);
         }
 
-        private static void createCard(string userName, int userId, string[] perms, DateTime validFromDate, DateTime validTillDate)
+        private static void createCard(string userName, int userId, string[] perms, DateTime CreationStamp, DateTime ExpiryStamp)
         {
             // Create the card object and store it in json file
             string cardId = generateCardId();
-            Card newCard = new Card(cardId, userName, userId, perms, validFromDate, validTillDate);
+            Card newCard = new(cardId, userName, userId, perms, CreationStamp, ExpiryStamp);
 
             // Add to json file
             JObject existingCards;
@@ -262,19 +269,17 @@ namespace Walto
             // Write the updated object back to the JSON file with formatting
             string jsonString = JsonConvert.SerializeObject(existingCards, Formatting.Indented);
             File.WriteAllText("cards.json", jsonString);
-
-            Console.WriteLine(newCard.userId);
         }
 
         private static string generateCardId()
         {
-            Random random = new Random();
+            Random random = new();
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            string cardId = new string(Enumerable.Repeat(chars, 6).Select(s => s[random.Next(s.Length)]).ToArray());
+            string cardId = new(Enumerable.Repeat(chars, 6).Select(s => s[random.Next(s.Length)]).ToArray());
             return cardId;
         }
 
-        private static void viewCard()
+        private static void ViewCard()
         {
             currentMenuId = 2;
             Console.Clear();
@@ -300,14 +305,14 @@ namespace Walto
                     Console.WriteLine("User Name: {0}", cardData.userName);
                     Console.WriteLine("User ID: {0}", cardData.userId);
                     Console.WriteLine("Permissions: {0}", string.Join(", ", cardData.perms));
-                    Console.WriteLine("Valid From Date: {0}", cardData.validFromDate.ToString("d/M/yyyy"));
-                    Console.WriteLine("Valid Till Date: {0}", cardData.validTillDate.ToString("d/M/yyyy"));
+                    Console.WriteLine("Valid From Date: {0}", cardData.CreationStamp.ToString("d/M/yyyy"));
+                    Console.WriteLine("Valid Till Date: {0}", cardData.ExpiryStamp.ToString("d/M/yyyy"));
                     break;
                 }
             }
         }
 
-        private static void viewAllCards()
+        private static void ViewAllCards()
         {
             currentMenuId = 3;
             Console.Clear();
@@ -318,55 +323,33 @@ namespace Walto
             Console.WriteLine("------------------------------");
             foreach (Card card in allCards)
             {
-                Console.WriteLine("Card ID: {0}", card.cardId);
-                Console.WriteLine("User Name: {0}", card.userName);
-                Console.WriteLine("User ID: {0}", card.userId);
-                Console.WriteLine("Permissions: {0}", string.Join(", ", card.perms));
-                Console.WriteLine("Valid From Date: {0}", card.validFromDate.ToString("d/M/yyyy"));
-                Console.WriteLine("Valid Till Date: {0}", card.validTillDate.ToString("d/M/yyyy"));
-                Console.WriteLine("------------------------------");
+                if (card != null)
+                {
+                    Console.WriteLine("Card ID: " + card.Id);
+                    Console.WriteLine("Card User Name: " + card.UserName);
+                    Console.WriteLine("Card User ID: " + card.UserId);
+                    if (card.Permissions != null)
+                    {
+                        Console.WriteLine("Permissions: " + string.Join(", ", card.Permissions));
+                    }
+                    else
+                    {
+                        Console.WriteLine("Permissions is null.");
+                    }
+                    Console.WriteLine("Creation Stamp: " + card.CreationStamp);
+                    Console.WriteLine("Expiry Stamp: " + card.ExpiryStamp);
+                    Console.WriteLine("------------------------------");
+                }
             }
         }
-    }
 
-    class Card
-    {
-        public string cardId { get; set; }
-        public string userName { get; set; }
-        public int userId { get; set; }
-        public string[] perms { get; set; }
-        public DateTime validFromDate { get; set; }
-        public DateTime validTillDate { get; set; }
 
-        public Card(string cardId, string userName, int userId, string[] perms, DateTime validFromDate, DateTime validTillDate)
+        [DllImport("User32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
+        public static bool KeyPressed(int vk)
         {
-            this.cardId = cardId;
-            this.userName = userName;
-            this.userId = userId;
-            this.perms = perms;
-            this.validFromDate = validFromDate;
-            this.validTillDate = validTillDate;
+            return (GetAsyncKeyState(vk) & 32768) != 0;
         }
-    }
-
-    class Door
-    {
-        public bool doorId { get; set; }
-        public bool doorName { get; set; }
-    }
-
-    class BalconyDoor : Door
-    {
-        public bool permissionId { get; set; }
-    }
-
-    class OfficeDoor : Door
-    {
-        public bool permissionId { get; set; }
-    }
-
-    class StudentDoor : Door
-    {
-        public bool permissionId { get; set; }
     }
 }
